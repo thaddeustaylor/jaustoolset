@@ -3,30 +3,30 @@ JAUS Tool Set
 Copyright (c)  2010, United States Government
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without 
+Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
-Redistributions of source code must retain the above copyright notice, 
+Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-Neither the name of the United States Government nor the names of 
-its contributors may be used to endorse or promote products derived from 
+Neither the name of the United States Government nor the names of
+its contributors may be used to endorse or promote products derived from
 this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
  *********************  END OF LICENSE ***********************************/
 package org.jts.gui.importJSIDL;
@@ -47,6 +47,10 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.XMLConstants;
+import javax.xml.transform.*;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.dom.DOMSource;
+import java.io.StringWriter;
 import org.xml.sax.SAXException;
 
 import org.jts.gui.JAXBtoJmatter.ServiceDef;
@@ -68,28 +72,29 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.jts.gui.util.GUISupport;
 import org.jts.gui.util.PathSelectDialog;
 
-/** 
+/**
  * Imports XML content in JSIDL
  */
 public class Import {
 
     private static Unmarshaller um = null;
-    private static final String sourceSchema = "resources/schema/JSIDL_Plus/jsidl_plus.xsd";
+    private static final String sourceSchema_1_0 = "resources/schema/JSIDL_Plus/jsidl_plus.xsd";
+    private static final String sourceSchema_1_1 = "resources/schema/JSIDL_1.1_Plus/jsidl_plus.xsd";
 
     public Import() {
-        try {
-            if (um == null) {
-                JAXBContext jc = JAXBContext.newInstance("org.jts.jsidl.binding");
-                um = jc.createUnmarshaller();
-                SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-                Schema schema = sf.newSchema(new File(sourceSchema));
-                um.setSchema(schema);
-            }
-        } catch (JAXBException jaxbe) {
-            throw new GUIError(jaxbe.getCause());
-        } catch (SAXException saxe) {
-            throw new GUIError(saxe.getCause());
-        }
+        // try {
+            // if (um == null) {
+                // JAXBContext jc = JAXBContext.newInstance("org.jts.jsidl.binding");
+                // um = jc.createUnmarshaller();
+                // SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+                // Schema schema = sf.newSchema(new File(sourceSchema));
+                // um.setSchema(schema);
+            // }
+        // } catch (JAXBException jaxbe) {
+        //     throw new GUIError(jaxbe.getCause());
+        // } catch (SAXException saxe) {
+        //     throw new GUIError(saxe.getCause());
+        // }
     }
 
     public interface ImportStatusMonitor {
@@ -276,6 +281,8 @@ public class Import {
                 errorLogger.addError("Exception while configuring parser: " + pce.toString());
             }
 
+
+
             for (int ii = 0; ii < fileList.size(); ii++) {
                 File file = fileList.get(ii);
                 final String fileName = file.toString();
@@ -290,18 +297,59 @@ public class Import {
                     continue;    // weaken import to allow bad files in target dir
                 }
 
-                statusMonitor.updateStatus("Unmarshalling files...");
+                statusMonitor.updateStatus("Unmarshalling file..." + file.getName());
                 Element root = doc.getDocumentElement();
 
-                if (root.getAttribute("xmlns").equals("urn:jaus:jsidl:1.0")) {
+                // try {
+                //   TransformerFactory transFactory = TransformerFactory.newInstance();
+                //   Transformer transformer = transFactory.newTransformer();
+                //   StringWriter buffer = new StringWriter();
+                //   transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+                //   transformer.transform(new DOMSource(root),
+                //         new StreamResult(buffer));
+                //   String str = buffer.toString();
+                //
+                //   errorLogger.addError("Root = " + str + "\n");
+                // } catch (Exception e) {
+                //   errorLogger.addError("Root = " + e.toString() + "\n");
+                // }
 
+                SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+                if (root.getAttribute("xmlns").equals("urn:jaus:jsidl:1.0")) {
+                    //statusMonitor.updateStatus("JSIDL version urn:jaus:jsidl:1.0");
                     try {
-                        objMap.put(root.getAttribute("id") + "-" + root.getAttribute("version"),
-                                um.unmarshal(file));
-                    } catch (final JAXBException jaxbe) {
-                        errorLogger.addError("Unable to unmarshal file" + fileName + " \n " + jaxbe.toString());
-                        continue;    // weaken import to allow bad files in target dir
+                        JAXBContext jc = JAXBContext.newInstance("org.jts.jsidl.binding");
+                        um = jc.createUnmarshaller();
+                        Schema schema = sf.newSchema(new File(sourceSchema_1_0));
+                        um.setSchema(schema);
+                    } catch (JAXBException jaxbe) {
+                        throw new GUIError(jaxbe.getCause());
+                    } catch (final SAXException saxe) {
+                        errorLogger.addError("Invalid schema from " + sourceSchema_1_0 + " \n ");
                     }
+                } else if (root.getAttribute("xmlns").equals("urn:jaus:jsidl:1.1")) {
+                    //statusMonitor.updateStatus("JSIDL version urn:jaus:jsidl:1.1");
+                    try {
+                      JAXBContext jc = JAXBContext.newInstance("org.jts.jsidl_plus_1_1.binding");
+                      um = jc.createUnmarshaller();
+                      Schema schema = sf.newSchema(new File(sourceSchema_1_1));
+                      um.setSchema(schema);
+                    } catch (JAXBException jaxbe) {
+                        throw new GUIError(jaxbe.getCause());
+                    } catch (final SAXException saxe) {
+                        errorLogger.addError("Invalid schema from " + sourceSchema_1_1 + " \n ");
+                    }
+                } else {
+                    errorLogger.addError("Invalid namespace = " + root.getAttribute("xmlns") + " in " + fileName + " \n " +
+                                         "Only xmlns=urn:jaus:jsidl:1.0 or xmlns=urn:jaus:jsidl:1.1 are valid." + "\n");
+                    continue;
+                }
+
+                try {
+                    objMap.put(root.getAttribute("id") + "-" + root.getAttribute("version"), um.unmarshal(file));
+                } catch (final JAXBException jaxbe) {
+                    errorLogger.addError("Unable to unmarshal file" + fileName + " \n " + jaxbe.toString());
+                    continue;    // weaken import to allow bad files in target dir
                 }
             }
 
@@ -560,7 +608,7 @@ public class Import {
                 for (org.jts.pbValidator.ValidatorResult result : e.getResults()) {
                     results += "Validation Error with service def " + validatingServiceDefName + " : " + result.getPath() + System.getProperty("line.separator");
                     results += result.getDescription() + System.getProperty("line.separator");
-                    
+
                     if( result.isError() )
                     {
                     	stopImport = true;
@@ -569,8 +617,8 @@ public class Import {
                 statusMonitor.reportFailure(results, null);
                 errorLogger.addError(results);
                 errorLogger.printErrorReports();
-                
-                
+
+
                 if( stopImport )
                 {
                 	throw new RuntimeException(e);
@@ -659,19 +707,19 @@ public class Import {
      */
     public List<org.jts.jsidl.binding.ServiceDef> importServiceDefs(final File inputPath) throws ImportException {
         ImportStatusMonitor dummyMonitor = new ImportStatusMonitor() {
-            public void updateStatus(String status) { 
+            public void updateStatus(String status) {
                 System.out.println("Import Status:" + status);
             }
-            public void reportFailure(String message, Exception cause) { 
+            public void reportFailure(String message, Exception cause) {
                 System.out.println("Import Failure:" + message);
             }
-            public void reportCompletion(String message) { 
+            public void reportCompletion(String message) {
                 System.out.println("Import Complete: " + message);
             }
         };
-        
+
         ImportErrorReportLogger dummyLogger = new ImportErrorReportLogger() {
-            public void addError(String str) { 
+            public void addError(String str) {
                 System.out.println("Import Error Reported: " + str);
             }
             public void printErrorReports() { }

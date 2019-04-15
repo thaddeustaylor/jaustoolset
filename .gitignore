@@ -1,0 +1,26 @@
+*.class
+*.db
+
+
+#GUI build artifacts
+GUI/db
+GUI/build
+GUI/src/org/jts/docGenerator/indexFiles/binding
+GUI/src/org/jts/gui/mxGraphtoJAXB/parser/*.java
+GUI/src/org/jts/jsidl
+GUI/src/org/jts/jsidl_plus_1_1
+GUI/src/org/jts/mxGraph
+
+#These are checked in but seem to be generated
+#GUI/src/org/jts/validator/parsers/GuardParser.java
+#GUI/src/org/jts/validator/parsers/GuardParserConstants.java
+#GUI/src/org/jts/validator/parsers/GuardParserTokenManager.java
+
+#Promela Code Generator build artifacts
+promelaCodeGenerator/build
+promelaCodeGenerator/dist/PromelaCodeGenerator.jar
+promelaCodeGenerator/src/org/jts/jsidl
+
+#Test Artifacts
+GUI/test/*/*Output.txt
+*.pyc
